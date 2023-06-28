@@ -68,17 +68,35 @@ python app.py
 ```
 
 ### 使用说明
-- 可选择在知识库页面配置知识库
+#### 可选择在知识库页面配置知识库
+- 支持excel、json、非图片类型的pdf、word、txt等格式
+- 其中excel、json需要按要求格式上传
+- 鼓励挂载一些医疗知识库尝试效果，有好的案例欢迎分享
 
-- 可选择使用lora微调模型
+![知识库配置](img/2.jpg)
 
-- 在医疗小助手页面选择配置自己的知识库聊天小助手（可自由选择是否使用某个知识库/微调的lora）
+#### 可选择使用lora微调模型
+- 微调目前最小需要24G显卡（~一张3090）
+- 微调结束后，可看到更新时间
 
-- 配置好小助手，来对话测试页面试试吧
+![Lora微调](img/3.jpg)
+
+#### 在医疗小助手页面选择配置自己的知识库聊天小助手（可自由选择是否使用某个知识库/微调的lora）
+- 配置prompt可参考模板多尝试，有发现好的prompt欢迎分享
+
+![配置](img/4.jpg)
+
+#### 配置好小助手，来对话测试页面试试吧
+
+- 选择一个已经配置好的聊天小助手，来体验一下吧
+
+![使用](img/1.jpg)
 
 ## 致谢
 
-感谢
+- [PULSE](https://github.com/openmedlab/PULSE): 本项目模型来源于PULSE
+- [langchain-ChatGLM](https://github.com/imClumsyPanda/langchain-ChatGLM): 本项目知识库部分参考了langchain-ChatGLM的代码
+- [BELLE](https://github.com/LianjiaTech/BELLE): 本项目Lora微调部分参考了BELLE的代码
 
 ## 贡献
 
