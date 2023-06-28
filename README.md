@@ -14,6 +14,12 @@
 
 ## 使用方法
 
+### 下载模型与修改配置文件
+
+如果直接使用有问题，可以将PULSE模型下载到本地：https://huggingface.co/OpenMEDLab/PULSE-7bv5
+
+然后在configs/common_config.py文件中将模型路径修改为本地路径，如修改embedding_model_dict和llm_model_dict中的路径即可。
+
 ### 安装
 
 首先，克隆本项目到本地计算机：
@@ -26,7 +32,7 @@ git clone https://github.com/JuneYaooo/medical_kb_chatbot.git
 
 确保您的计算机上已安装以下依赖项：
 
-- Python 3.8
+- Python 3.9
 - pip 包管理器
 
 进入项目目录并安装必要的依赖项：
@@ -52,18 +58,27 @@ conda env create -f environment.yml
 激活新创建的环境：
 
 ```
-conda activate med_llm
+conda activate kb_chat
 ```
 
 然后运行聊天机器人：
 
 ```
-python backend_app.py
+python app.py
 ```
 
-### 交互
+### 使用说明
+- 可选择在知识库页面配置知识库
 
-聊天机器人将在终端上提供一个简单的交互界面。您可以根据提示输入相关信息，选择要执行的功能。
+- 可选择使用lora微调模型
+
+- 在医疗小助手页面选择配置自己的知识库聊天小助手（可自由选择是否使用某个知识库/微调的lora）
+
+- 配置好小助手，来对话测试页面试试吧
+
+## 致谢
+
+感谢
 
 ## 贡献
 
