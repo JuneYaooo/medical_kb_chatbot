@@ -84,6 +84,10 @@ def pulse_train_model(model_name, lora_name,  training_data_path):
         f.write(log)  # 将log内容写入文件
     with open(f"data/{lora_name}_dataset.json", "w", encoding="utf-8") as f:
         json.dump(all_data, f, indent=4,  ensure_ascii=False)
+    if not os.path.exists('finetune/pulse/data'):
+        os.makedirs('finetune/pulse/data')
+    if not os.path.exists('finetune/pulse/logs'):
+        os.makedirs('finetune/pulse/logs')
     shutil.copyfile(f"data/{lora_name}_dataset.json", f"finetune/pulse/data/{lora_name}_dataset.json")
     
     available_gpus = get_available_gpu(threshold=20000)

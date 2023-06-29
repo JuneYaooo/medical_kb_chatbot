@@ -300,7 +300,6 @@ def get_vector_store(vs_id, files, sentence_size, history, one_conent, one_conte
             filename = os.path.split(file.name)[-1]
             shutil.move(file.name, os.path.join(UPLOAD_ROOT_PATH, vs_id, filename))
             filelist.append(os.path.join(UPLOAD_ROOT_PATH, vs_id, filename))
-            print('\n======filelist, vs_path=========\n',filelist, vs_path)
         vs_path, loaded_files = local_doc_qa.init_knowledge_vector_store(filelist, vs_path, sentence_size)
     else:
         vs_path, loaded_files = local_doc_qa.one_knowledge_add(vs_path, files, one_conent, one_content_segmentation,
@@ -380,7 +379,6 @@ def change_lora_name_input(model_name,lora_name_en):
     else:
         file_status = f"已加载{lora_name_en}"
         model_update_time = get_model_update_time(model_name, lora_name_en)
-        print('lora_name_en',lora_name_en)
         return gr.update(visible=False), gr.update(visible=False), model_update_time
 
 
@@ -396,11 +394,13 @@ def change_assistant_name_input(ass_id):
         return gr.update(visible=True), gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), '医疗小助手', LLM_MODEL,EMBEDDING_MODEL,'不使用',LLM_HISTORY_LEN,cur_vs_list.value[0] if len(cur_vs_list.value) > 1 else '不使用知识库',VECTOR_SEARCH_TOP_K,500,True,250,True,''
 
     else:
-        file_status = f"已加载{ass_id}"
-        print('file_status',file_status)
-        ass_name_en,ass_name, llm_model, embedding_model, lora_name, llm_history_len, knowledge_set_name, top_k, score_threshold, chunk_content, chunk_sizes,show_reference,prompt_template = read_config(ass_id)
-        
-        return gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), gr.update(visible=False), ass_name, llm_model, embedding_model, lora_name, llm_history_len, knowledge_set_name, top_k, score_threshold, chunk_content, chunk_sizes,show_reference,prompt_template
+        try:
+            ass_name_en,ass_name, llm_model, embedding_model, lora_name, llm_history_len, knowledge_set_name, top_k, score_threshold, chunk_content, chunk_sizes,show_reference,prompt_template = read_config(ass_id)
+            file_status = f"已加载{ass_id}"
+            print('file_status',file_status)
+            return gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), gr.update(visible=False), ass_name, llm_model, embedding_model, lora_name, llm_history_len, knowledge_set_name, top_k, score_threshold, chunk_content, chunk_sizes,show_reference,prompt_template
+        except Exception as e:
+            return gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), gr.update(visible=False), '医疗小助手', LLM_MODEL,EMBEDDING_MODEL,'不使用',LLM_HISTORY_LEN,cur_vs_list.value[0] if len(cur_vs_list.value) > 1 else '不使用知识库',VECTOR_SEARCH_TOP_K,500,True,250,True,''      
 
 
 def add_ass_config(ass_id,ass_list):
@@ -608,8 +608,8 @@ with gr.Blocks(css=block_css, theme=gr.themes.Default(**default_theme_args)) as 
                 lora_name_en = gr.Textbox(label="请输入Lora英文名称，中间不能有空格，小写字母，单词间可用下划线分开",
                                             lines=1,
                                             interactive=True,
-                                            visible=False)
-                lora_add = gr.Button(value="确认添加Lora", visible=False)
+                                            visible=True)
+                lora_add = gr.Button(value="确认添加Lora", visible=True)
         with gr.Row():
             lastest_model = gr.outputs.Textbox(type="text", label='模型更新时间（请切换模型或Lora刷新显示）')
         gr.Markdown("## lora微调，目前只支持excel格式，要求语料格式为问题|回答两列，或者系统指示|问题|回答三列")
@@ -639,8 +639,8 @@ with gr.Blocks(css=block_css, theme=gr.themes.Default(**default_theme_args)) as 
             ass_name_en = gr.Textbox(label="请输入小助手英文名称，中间不能有空格，小写字母，单词间可用下划线分开",
                                          lines=1,
                                          interactive=True,
-                                         visible=False)
-            ass_add = gr.Button(value="确认添加小助手", visible=False)
+                                         visible=True)
+            ass_add = gr.Button(value="确认添加小助手", visible=True)
         ass_config = gr.Column(visible=False)
         with ass_config:
             ass_name = gr.Textbox(label="请给机器人取个名字，随便取，中英文均可，可以有空格",
