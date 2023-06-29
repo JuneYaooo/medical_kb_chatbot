@@ -18,7 +18,7 @@ from loader.models.base import (BaseAnswer,
 from loader.models.loader.args import parser
 from loader.models.loader import LoaderCheckPoint
 import loader.models.shared as shared
-from agent import bing_search
+# from agent import bing_search
 from langchain.docstore.document import Document
 from .modules.json_load import JsonLoader
 from .modules.excel_load import ExcelLoader
