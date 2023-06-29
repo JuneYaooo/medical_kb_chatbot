@@ -686,7 +686,7 @@ with gr.Blocks(css=block_css, theme=gr.themes.Default(**default_theme_args)) as 
             prompt_note = """prompt_template ，{context} 代表搜出来的文档，{chat_history}代表历史聊天记录，{question}代表最后一个问题，请在prompt里加上这些关键词。注意不使用知识库的情况下不生效。参考例子：假设你是用药助手，请根据文档来回复，如果文档内容为空或者None，则忽略，文档:{context}\n{chat_history}</s>User: {question}</s>"""
             gr.Markdown(prompt_note)
             prompt_template = gr.Textbox(label="内置prompt模板",
-                                            value="假设你是用药助手，请根据文档来回复，如果文档内容为空或者None，则忽略，文档:{context}\n{chat_history}</s>User: {question}</s>",
+                                            value="假设你是用药助手，请根据文档来回复，如果文档内容为空或者None，则忽略，文档:{context}\n{chat_history}</s>User:{question}</s>Helper:",
                                             lines=8,
                                             interactive=True,
                                             visible=True)
