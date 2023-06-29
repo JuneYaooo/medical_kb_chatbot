@@ -74,7 +74,7 @@ python app.py
 - 支持excel、json、非图片类型的pdf、word、txt等格式
 - 其中excel、json需要按要求格式上传
 - 鼓励挂载一些医疗知识库尝试效果，有好的案例欢迎分享
-- 提供了一点点[[demo数据](https://github.com/JuneYaooo/medical_kb_chatbot/blob/main/demo_data/kb_drug_demo.jsonl)] ，可以下下来试一下
+- 提供了一点点药品[demo数据](https://github.com/JuneYaooo/medical_kb_chatbot/blob/main/demo_data/kb_drug_demo.jsonl) ，可以下下来试一下
 
 
 ![知识库配置](img/2.jpg)
@@ -82,7 +82,7 @@ python app.py
 #### 可选择使用lora微调模型
 - 微调目前最小需要24G显卡（~一张3090）
 - 微调结束后，可看到更新时间
-- 提供了一点点[[demo数据](https://github.com/JuneYaooo/medical_kb_chatbot/blob/main/demo_data/lora_demo.xlsx)] ，可以下下来试一下
+- 提供了一点点训练[demo数据](https://github.com/JuneYaooo/medical_kb_chatbot/blob/main/demo_data/lora_demo.xlsx) ，可以下下来试一下
 
 
 ![Lora微调](img/3.jpg)
