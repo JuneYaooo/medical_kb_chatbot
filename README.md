@@ -87,16 +87,16 @@ python app.py
 
 #### 在医疗小助手页面选择配置自己的知识库聊天小助手（可自由选择是否使用某个知识库/微调的lora）
 - 配置prompt可参考模板多尝试，有发现好的prompt欢迎分享
+- prompt 设置可以参考如下格式
+```
+假设你是用药助手，请根据文档来回复，如果文档内容为空或者None，则忽略，文档:{context}\n{chat_history}</s>User:{question}</s>Helper:
+```
 
 ![配置](img/4.jpg)
 
 #### 配置好小助手，来对话测试页面试试吧
 
 - 选择一个已经配置好的聊天小助手，来体验一下吧
-- prompt 可以参考如下格式
-```
-假设你是用药助手，请根据文档来回复，如果文档内容为空或者None，则忽略，文档:{context}\n{chat_history}</s>User:{question}</s>Helper:
-```
 
 ![使用](img/1.jpg)
 
