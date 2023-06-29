@@ -424,9 +424,7 @@ def change_model_name_input(model_name):
     else:
         model_name = ''
     model_dir = os.path.join(f"finetune", model_name,'output')
-    print('model_dir',model_dir)
     lora_list = find_folders(model_dir)
-    print('lora_list',lora_list)
     return lora_list,gr.update(visible=True, choices=lora_list+["新建Lora"], value=lora_list[0] if len(lora_list)>0 else "新建Lora")
 
 def change_model_name_select(model_name):
@@ -435,9 +433,7 @@ def change_model_name_select(model_name):
     else:
         model_name = ''
     model_dir = os.path.join(f"finetune", model_name,'output')
-    print('model_dir',model_dir)
     lora_list = find_folders(model_dir)
-    print('lora_list',lora_list)
     return lora_list,gr.update(visible=True, choices=lora_list+["不使用"], value=lora_list[0] if len(lora_list)>0 else "不使用")
 
 block_css = """.importantButton {
@@ -474,6 +470,8 @@ def get_lora_init_list(model_name):
     else:
         model_name = ''
     model_dir = os.path.join(f"finetune", model_name,'output')
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
     lora_list = find_folders(model_dir)
     return lora_list
 
