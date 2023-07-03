@@ -62,16 +62,11 @@ def remove_starting_symbols(string):
     return result
 
 def extract_content(replacement_text, string):
-    pattern_output = r'输出:(.*?)(?=<\/s>)'
-    pattern_helper = r'<\\s>Helper: (.*?)</s>' # r'Helper:(.*?)(?=<\/s>)'
+    pattern_helper = r'Helper:(.*?)</s>' # r'Helper:(.*?)(?=<\/s>)'
 
-    match_output = re.findall(pattern_output, string, re.DOTALL)
     match_helper = re.findall(pattern_helper, string, re.DOTALL)
 
-    if match_output:
-        content = match_output[-1].strip()
-        return content.replace('</s>', '').replace('<\s>', '')
-    elif match_helper:
+    if match_helper:
         content = match_helper[-1].strip()
         return content.replace('</s>', '').replace('<\s>', '')
     else:

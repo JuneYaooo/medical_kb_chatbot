@@ -157,23 +157,21 @@ def get_free_memory():
 def get_chat_answer(query, ass_id, history, score_threshold=VECTOR_SEARCH_SCORE_THRESHOLD,
                vector_search_top_k=VECTOR_SEARCH_TOP_K, chunk_content: bool = True,
                chunk_size=CHUNK_SIZE, streaming: bool = STREAMING):
-    print('===query===',query)
     ass_name_en,ass_name, llm_model, embedding_model, lora_name, llm_history_len, knowledge_set_name, top_k, score_threshold, chunk_content, chunk_sizes,show_reference,prompt_template = read_config(ass_id)
-    history[-1][-1] = remove_html_tags(history[-1][-1])
+    if len(history)>0 and len(history[-1])>0:
+        history[-1][-1] = remove_html_tags(history[-1][-1]) 
     history = history[-llm_history_len:] if history is not None and len(history) > llm_history_len else history
-    print('===history===',history)
     local_doc_qa.top_k = top_k
     local_doc_qa.score_threshold = score_threshold
     local_doc_qa.chunk_content = chunk_content
     local_doc_qa.chunk_size = chunk_size
     available_gpus = get_available_gpu(threshold=20000)
-    if len(available_gpus)>0:
-        available_gpu = available_gpus[0]
-        target_device = torch.device(f'cuda:{str(available_gpu)}')
-    else:
-        return [[None,'GPU空间不够，请至少确保机器上GPU剩余空间>20G']]
-
     if local_doc_qa.llm is None:
+        if len(available_gpus)>0:
+            available_gpu = available_gpus[0]
+            target_device = torch.device(f'cuda:{str(available_gpu)}')
+        else:
+            yield [[None,'GPU空间不够，请至少确保机器上GPU剩余空间>20G']],'',''
         args_dict = {'model':llm_model, 'lora':lora_name} if lora_name != '不使用' else {'model':llm_model}
         shared.loaderCheckPoint = LoaderCheckPoint(args_dict)
         llm_model_ins = shared.loaderLLM()
@@ -181,6 +179,11 @@ def get_chat_answer(query, ass_id, history, score_threshold=VECTOR_SEARCH_SCORE_
         local_doc_qa.init_cfg(llm_model=llm_model_ins,embedding_model=embedding_model,
                  embedding_device=target_device)
     if local_doc_qa.embeddings is None:
+        if len(available_gpus)>0:
+            available_gpu = available_gpus[0]
+            target_device = torch.device(f'cuda:{str(available_gpu)}')
+        else:
+            yield [[None,'GPU空间不够，请至少确保机器上GPU剩余空间>20G']],'',''
         local_doc_qa.init_embedding(embedding_model=embedding_model,embedding_device=target_device)
     if knowledge_set_name !='不使用知识库':
         vs_path = os.path.join(VS_ROOT_PATH, knowledge_set_name)
@@ -199,12 +202,9 @@ def get_chat_answer(query, ass_id, history, score_threshold=VECTOR_SEARCH_SCORE_
             yield history, "", source
     else:
         print('纯聊天模式')
-        for answer_result in local_doc_qa.llm.generatorAnswer(prompt=query, history=history,
-                                                              streaming=streaming):
-
-            resp = answer_result.llm_output["answer"]
-            history = answer_result.history
-            history[-1][-1] = resp 
+        history = history
+        for answer_result, history in local_doc_qa.get_base_answer(model_name=llm_model,
+                query=query, prompt_template=prompt_template,chat_history=history, streaming=streaming):
             yield history, "", "未挂载知识库"
 
 def get_knowledge_search(query, vs_path, history, score_threshold=VECTOR_SEARCH_SCORE_THRESHOLD,

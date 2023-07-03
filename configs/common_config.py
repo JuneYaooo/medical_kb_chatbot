@@ -62,7 +62,7 @@ LLM_LORA_PATH = ""
 USE_LORA = True if LLM_LORA_PATH else False
 
 # LLM streaming reponse
-STREAMING = True
+STREAMING = False
 
 # Use p-tuning-v2 PrefixEncoder
 USE_PTUNING_V2 = False

@@ -216,6 +216,7 @@ class LocalDocQA:
                  top_k=VECTOR_SEARCH_TOP_K,
                  ):
         self.llm = llm_model
+        print('embedding_device',embedding_device)
         self.embeddings = HuggingFaceEmbeddings(model_name=embedding_model_dict[embedding_model],
                                                 model_kwargs={'device': embedding_device})
         self.top_k = top_k
@@ -335,6 +336,23 @@ class LocalDocQA:
             response = {"query": query,
                         "result": resp,
                         "source_documents": related_docs_with_score}
+            yield response, history
+
+    def get_base_answer(self, model_name, query, prompt_template, chat_history=[], streaming: bool = STREAMING):
+        formatted_history = concat_history(model_name,chat_history,query,process_type='chat')
+        torch_gc()
+        if prompt_template == '':
+            prompt = f"{formatted_history}</s>User:{query}</s>Helper:"
+        else:
+            prompt = generate_prompt(model_name, [], query, chat_history, prompt_template)
+
+        for answer_result in self.llm.generatorAnswer(prompt=prompt, history=chat_history,
+                                                    streaming=streaming):
+            resp = answer_result.llm_output["answer"]
+            history = answer_result.history
+            history[-1][0] = query
+            response = {"query": query,
+                        "result": resp}
             yield response, history
 
     # query      查询内容
