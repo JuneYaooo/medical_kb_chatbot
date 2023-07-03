@@ -84,7 +84,7 @@ import re
 def remove_prefix_suffix(string):
     pattern = r'^((?:Helper:|:)\s*)(.*?)(</s>)?$'
     string = re.sub(pattern, r'\2', string, flags=re.DOTALL)
-    string = remove_starting_symbols(string)
+    string = remove_starting_symbols(string).replace('</s>', '').replace('<\s>', '')
     return string
 
 class Bloomz(BaseAnswer, LLM, ABC):
@@ -126,13 +126,15 @@ class Bloomz(BaseAnswer, LLM, ABC):
         # 定义模型stopping_criteria 队列，在每次响应时将 torch.LongTensor, torch.FloatTensor同步到AnswerResult
         listenerQueue = AnswerResultQueueSentinelTokenListenerQueue()
         stopping_criteria_list.append(listenerQueue)
+        model_device = next(self.checkPoint.model.parameters()).device
         if streaming:
             history += [[]]
             streamer = MyStreamer() # type: ignore
             # torch.manual_seed(23333)
-            inputs = self.checkPoint.tokenizer([prompt], return_tensors="pt").input_ids
+            inputs = self.checkPoint.tokenizer([prompt], return_tensors="pt").input_ids.to(model_device) 
+
             thread = Thread(target=self.checkPoint.model.generate, kwargs=dict(
-                inputs=inputs.cuda(),
+                inputs=inputs,
                 # attention_mask=attention_mask.cuda(),
                 # gen kargs
                 num_beams=1,
@@ -161,9 +163,9 @@ class Bloomz(BaseAnswer, LLM, ABC):
                     answer_result.listenerToken = listenerQueue.listenerQueue.pop()
                 generate_with_callback(answer_result)
         else:
-            inputs = self.checkPoint.tokenizer([prompt], return_tensors="pt").input_ids
+            inputs = self.checkPoint.tokenizer([prompt], return_tensors="pt").input_ids.to(model_device) 
             re_token_ids = self.checkPoint.model.generate(
-                inputs=inputs.cuda(),
+                inputs=inputs, 
                 # gen kargs
                 num_beams=1,
                 do_sample=True,

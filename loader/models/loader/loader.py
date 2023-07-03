@@ -154,7 +154,7 @@ class LoaderCheckPoint:
                     self.load_in_8bit, self.is_llamacpp]):
 
             if torch.cuda.is_available() and self.llm_device.lower().startswith("cuda"):
-                available_gpus = get_available_gpu(threshold=15000)
+                available_gpus = get_available_gpu(threshold=20000)
                 print('available_gpus',available_gpus)
                 if len(available_gpus)>0:
                     available_gpu = available_gpus[0]

@@ -87,15 +87,6 @@ local_doc_qa = LocalDocQA()
 
 flag_csv_logger = gr.CSVLogger()
 
-def change_config(model_name, lora_name, knowledge_set_name):
-    args_dict = {'model':model_name, 'lora':lora_name} if lora_name != '不使用' else {'model':model_name}
-    shared.loaderCheckPoint = LoaderCheckPoint(args_dict)
-    llm_model_ins = shared.loaderLLM()
-    llm_model_ins.set_history_len(LLM_HISTORY_LEN)
-    local_doc_qa.init_cfg(llm_model=llm_model_ins)
-    if local_doc_qa.embeddings is None:
-        local_doc_qa.init_embedding()
-    return [[None, '模型加载完成']]
 
 def read_config(ass_name_en):
     config_file_path = f"configs/{ass_name_en}.yaml"
@@ -121,10 +112,51 @@ def remove_html_tags(text):
     clean_text = re.sub('<.*?>', '', text)
     return clean_text
 
+from pynvml import (nvmlInit, nvmlDeviceGetCount, nvmlDeviceGetHandleByIndex,
+                    nvmlDeviceGetName, nvmlDeviceGetMemoryInfo, nvmlShutdown)
+def get_available_gpu(threshold=20000):
+    # Initialize NVML
+    nvmlInit()
+    # Get the number of GPU devices
+    device_count = nvmlDeviceGetCount()
+
+    # Find GPU devices with available memory greater than the threshold
+    available_gpus = []
+    for i in range(device_count):
+        handle = nvmlDeviceGetHandleByIndex(i)
+        info = nvmlDeviceGetMemoryInfo(handle)
+        free_memory_mb = info.free / 1024 / 1024
+
+        if free_memory_mb > threshold:
+            available_gpus.append(i)
+
+    # Shutdown NVML
+    nvmlShutdown()
+    # available_gpus = ['0']
+
+    return available_gpus
+
+
+def get_free_memory():
+    nvmlInit()
+    # Get the number of GPU devices
+    device_count = nvmlDeviceGetCount()
+
+    # Find GPU devices with available memory greater than the threshold
+    free_memory_gpus = []
+    for i in range(device_count):
+        handle = nvmlDeviceGetHandleByIndex(i)
+        info = nvmlDeviceGetMemoryInfo(handle)
+        free_memory_mb = info.free / 1024 / 1024
+        free_memory_gpus.append(free_memory_mb)
+
+    # Shutdown NVML
+    nvmlShutdown()
+    return free_memory_gpus
+
 def get_chat_answer(query, ass_id, history, score_threshold=VECTOR_SEARCH_SCORE_THRESHOLD,
                vector_search_top_k=VECTOR_SEARCH_TOP_K, chunk_content: bool = True,
                chunk_size=CHUNK_SIZE, streaming: bool = STREAMING):
-    import copy
     print('===query===',query)
     ass_name_en,ass_name, llm_model, embedding_model, lora_name, llm_history_len, knowledge_set_name, top_k, score_threshold, chunk_content, chunk_sizes,show_reference,prompt_template = read_config(ass_id)
     history[-1][-1] = remove_html_tags(history[-1][-1])
@@ -134,18 +166,24 @@ def get_chat_answer(query, ass_id, history, score_threshold=VECTOR_SEARCH_SCORE_
     local_doc_qa.score_threshold = score_threshold
     local_doc_qa.chunk_content = chunk_content
     local_doc_qa.chunk_size = chunk_size
+    available_gpus = get_available_gpu(threshold=20000)
+    if len(available_gpus)>0:
+        available_gpu = available_gpus[0]
+        target_device = torch.device(f'cuda:{str(available_gpu)}')
+    else:
+        return [[None,'GPU空间不够，请至少确保机器上GPU剩余空间>20G']]
+
     if local_doc_qa.llm is None:
         args_dict = {'model':llm_model, 'lora':lora_name} if lora_name != '不使用' else {'model':llm_model}
         shared.loaderCheckPoint = LoaderCheckPoint(args_dict)
         llm_model_ins = shared.loaderLLM()
         llm_model_ins.set_history_len(llm_history_len)
-        local_doc_qa.init_cfg(llm_model=llm_model_ins)
-
+        local_doc_qa.init_cfg(llm_model=llm_model_ins,embedding_model=embedding_model,
+                 embedding_device=target_device)
+    if local_doc_qa.embeddings is None:
+        local_doc_qa.init_embedding(embedding_model=embedding_model,embedding_device=target_device)
     if knowledge_set_name !='不使用知识库':
         vs_path = os.path.join(VS_ROOT_PATH, knowledge_set_name)
-        print('vs_path',vs_path)
-        if local_doc_qa.embeddings is None:
-            local_doc_qa.init_embedding(model_name=embedding_model)
         for resp, history in local_doc_qa.get_knowledge_based_answer(model_name=llm_model,
                 query=query, vs_path=vs_path, prompt_template=prompt_template,chat_history=history, streaming=streaming):
             if len(resp["source_documents"])>0:
@@ -167,7 +205,7 @@ def get_chat_answer(query, ass_id, history, score_threshold=VECTOR_SEARCH_SCORE_
             resp = answer_result.llm_output["answer"]
             history = answer_result.history
             history[-1][-1] = resp 
-            yield history, "", ""
+            yield history, "", "未挂载知识库"
 
 def get_knowledge_search(query, vs_path, history, score_threshold=VECTOR_SEARCH_SCORE_THRESHOLD,
                vector_search_top_k=VECTOR_SEARCH_TOP_K, chunk_content: bool = True,
@@ -197,59 +235,6 @@ def get_knowledge_search(query, vs_path, history, score_threshold=VECTOR_SEARCH_
         yield history + [[query,
                             "请选择知识库后进行测试，当前未选择知识库。"]], ""
 
-def get_answer(query, vs_path, history, mode, score_threshold=VECTOR_SEARCH_SCORE_THRESHOLD,
-               vector_search_top_k=VECTOR_SEARCH_TOP_K, chunk_content: bool = True,
-               chunk_size=CHUNK_SIZE, streaming: bool = STREAMING):
-    if mode == "知识库问答" and vs_path is not None and os.path.exists(vs_path):
-        if local_doc_qa.embeddings is None:
-            local_doc_qa.init_embedding()
-        for resp, history in local_doc_qa.get_knowledge_based_answer(
-                query=query, vs_path=vs_path, chat_history=history, streaming=streaming):
-            source = "\n\n"
-            source += "".join(
-                [f"""<details> <summary>出处 [{i + 1}] {os.path.split(doc.metadata["source"])[-1]}</summary>\n"""
-                 f"""{doc.page_content}\n"""
-                 f"""</details>"""
-                 for i, doc in
-                 enumerate(resp["source_documents"])])
-            history[-1][-1] += source
-            yield history, ""
-    elif mode == "知识库配置":
-        if local_doc_qa.embeddings is None:
-            local_doc_qa.init_embedding()
-        if os.path.exists(vs_path):
-            resp, prompt = local_doc_qa.get_knowledge_based_conent_test(query=query, vs_path=vs_path,
-                                                                        score_threshold=score_threshold,
-                                                                        vector_search_top_k=vector_search_top_k,
-                                                                        chunk_content=chunk_content,
-                                                                        chunk_size=chunk_size)
-            if not resp["source_documents"]:
-                yield history + [[query,
-                                  "根据您的设定，没有匹配到任何内容，请确认您设置的知识相关度 Score 阈值是否过小或其他参数是否正确。"]], ""
-            else:
-                source = "\n".join(
-                    [
-                        f"""<details open> <summary>【知识相关度 Score】：{doc.metadata["score"]} - 【出处{i + 1}】：  {os.path.split(doc.metadata["source"])[-1]} </summary>\n"""
-                        f"""{doc.page_content}\n"""
-                        f"""</details>"""
-                        for i, doc in
-                        enumerate(resp["source_documents"])])
-                history.append([query, "以下内容为知识库中满足设置条件的匹配结果：\n\n" + source])
-                yield history, ""
-        else:
-            yield history + [[query,
-                              "请选择知识库后进行测试，当前未选择知识库。"]], ""
-    else:
-        for answer_result in local_doc_qa.llm.generatorAnswer(prompt=query, history=history,
-                                                              streaming=streaming):
-
-            resp = answer_result.llm_output["answer"]
-            history = answer_result.history
-            history[-1][-1] = resp + (
-                "\n\n当前知识库为空，如需基于知识库进行问答，请先加载知识库后，再进行提问。" if mode == "知识库问答" else "")
-            yield history, ""
-    # logger.info(f"flagging: username={FLAG_USER_NAME},query={query},vs_path={vs_path},mode={mode},history={history}")
-    # flag_csv_logger.flag([query, vs_path, history, mode], username=FLAG_USER_NAME)
 
 def change_assistant_input(ass_id):
 
@@ -392,7 +377,6 @@ def add_lora(lora_name_en,lora_list):
 def change_assistant_name_input(ass_id):
     if ass_id == "新建小助手":
         return gr.update(visible=True), gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), '医疗小助手', LLM_MODEL,EMBEDDING_MODEL,'不使用',LLM_HISTORY_LEN,cur_vs_list.value[0] if len(cur_vs_list.value) > 1 else '不使用知识库',VECTOR_SEARCH_TOP_K,500,True,250,True,''
-
     else:
         try:
             ass_name_en,ass_name, llm_model, embedding_model, lora_name, llm_history_len, knowledge_set_name, top_k, score_threshold, chunk_content, chunk_sizes,show_reference,prompt_template = read_config(ass_id)
@@ -683,7 +667,7 @@ with gr.Blocks(css=block_css, theme=gr.themes.Default(**default_theme_args)) as 
             show_reference = gr.Checkbox(value=True,
                                         label="是否显示参考文献窗口",
                                         interactive=True)
-            prompt_note = """prompt_template ，{context} 代表搜出来的文档，{chat_history}代表历史聊天记录，{question}代表最后一个问题，请在prompt里加上这些关键词。注意不使用知识库的情况下不生效。参考例子：假设你是用药助手，请根据文档来回复，如果文档内容为空或者None，则忽略，文档:{context}\n{chat_history}</s>User: {question}</s>"""
+            prompt_note = """prompt_template ，{context} 代表搜出来的文档，{chat_history}代表历史聊天记录，{question}代表最后一个问题，请在prompt里加上这些关键词。注意不使用知识库的情况下不生效。参考例子：假设你是用药助手，请根据文档来回复，如果文档内容为空或者None，则忽略，文档:{context}\n{chat_history}</s>User: {question}</s>Helper:"""
             gr.Markdown(prompt_note)
             prompt_template = gr.Textbox(label="内置prompt模板",
                                             value="假设你是用药助手，请根据文档来回复，如果文档内容为空或者None，则忽略，文档:{context}\n{chat_history}</s>User:{question}</s>Helper:",
