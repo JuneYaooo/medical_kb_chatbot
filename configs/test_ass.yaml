@@ -1,0 +1,12 @@
+ass_name: 药物小助手
+llm_model: PULSE
+embedding_model: text2vec-large-chinese
+lora_name: 不使用
+llm_history_len: 8
+knowledge_set_name: drug_kb
+top_k: 3
+score_threshold: 500
+chunk_content: true
+chunk_sizes: 250
+show_reference: true
+prompt_template: '假设你是药物助手，请根据文档来回复，如果文档内容为空或者None，则忽略，文档:{context}\n{chat_history}</s>User:{question}</s>Helper:'
